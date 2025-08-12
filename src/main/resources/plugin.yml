@@ -1,0 +1,5 @@
+main: com.sidfplugins.SiDFPlugins
+version: 1.0.0-SNAPSHOT
+name: SiDFPlugins
+author: Yun_Hydrogen
+api-version: 1.20
