@@ -1,0 +1,137 @@
+package com.sidfplugins.commands;
+
+import java.util.Map;
+
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
+import com.sidfplugins.managers.StrongholdManager; // 导入 Stronghold 模型
+import com.sidfplugins.models.Stronghold; // 导入 Map
+
+public class SidfCommand implements CommandExecutor {
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0) {
+            return false; // 参数不足，显示用法
+        }
+
+        // 处理 /sidf set ...
+        if (args[0].equalsIgnoreCase("set")) {
+            handleSetCommand(sender, args);
+            return true;
+        }
+
+        // 处理 /sidf remove ...
+        if (args[0].equalsIgnoreCase("remove")) {
+            handleRemoveCommand(sender, args);
+            return true;
+        }
+
+        // 新增: 处理 /sidf list
+        if (args[0].equalsIgnoreCase("list")) {
+            handleListCommand(sender);
+            return true;
+        }
+
+        return false; // 未知的子命令，显示用法
+    }
+
+    private void handleListCommand(CommandSender sender) {
+        Map<String, Stronghold> strongholds = StrongholdManager.getInstance().getAllStrongholds();
+
+        if (strongholds.isEmpty()) {
+            sender.sendMessage("§e提示: §r当前没有设置任何据点。");
+            return;
+        }
+
+        sender.sendMessage("§a===== §l所有据点列表 §a=====");
+        for (Stronghold stronghold : strongholds.values()) {
+            Location center = stronghold.getCenter();
+            String worldName = center.getWorld() != null ? center.getWorld().getName() : "未知世界";
+            String message = String.format("§e据点 %s: §7世界: %s, 中心: (%.1f, %.1f, %.1f), 半径: %.1f",
+                stronghold.getId(),
+                worldName,
+                center.getX(),
+                center.getY(),
+                center.getZ(),
+                stronghold.getRadius());
+            sender.sendMessage(message);
+        }
+        sender.sendMessage("§a=========================");
+    }
+
+    private void handleSetCommand(CommandSender sender, String[] args) {
+// ...existing code...
+// ... (handleSetCommand 方法保持不变)
+        if (!(sender instanceof Player)) {
+            if (sender != null) {
+                sender.sendMessage("§c错误: §r此命令只能由玩家执行。");
+            }
+            return;
+        }
+        // /sidf set area <ID> <radius> -> 4个参数
+        if (args.length != 4 || !args[1].equalsIgnoreCase("area")) {
+            sender.sendMessage("§c用法: §r/sidf set area <A/B/C/D> <半径>");
+            return;
+        }
+
+        Player player = (Player) sender;
+        String areaId = args[2].toUpperCase();
+
+        if (!areaId.matches("[ABCD]")) {
+            player.sendMessage("§c错误: §r据点标号必须是 A, B, C, 或 D。");
+            return;
+        }
+
+        // 检查据点是否已存在
+        if (StrongholdManager.getInstance().getStronghold(areaId) != null) {
+            player.sendMessage("§c错误: §r据点 " + areaId + " 已存在，请先删除或使用其他标号。");
+            return;
+        }
+
+        double radius;
+        try {
+            radius = Double.parseDouble(args[3]);
+        } catch (NumberFormatException e) {
+            player.sendMessage("§c错误: §r半径必须是一个有效的数字。");
+            return;
+        }
+
+        Location center = player.getLocation();
+        StrongholdManager.getInstance().createOrUpdateStronghold(areaId, center, radius);
+
+        player.sendMessage("§a成功! §r据点 " + areaId + " 已设置。");
+        player.sendMessage("  §7中心: " + String.format("%.1f, %.1f, %.1f", center.getX(), center.getY(), center.getZ()));
+        player.sendMessage("  §7半径: " + radius);
+    }
+
+    private void handleRemoveCommand(CommandSender sender, String[] args) {
+// ...existing code...
+// ... (handleRemoveCommand 方法保持不变)
+        // /sidf remove <ID> -> 2个参数
+        if (args.length != 2) {
+            sender.sendMessage("§c用法: §r/sidf remove <A/B/C/D>");
+            return;
+        }
+
+        String areaId = args[1].toUpperCase();
+
+        if (!areaId.matches("[ABCD]")) {
+            sender.sendMessage("§c错误: §r据点标号必须是 A, B, C, 或 D。");
+            return;
+        }
+
+        // 检查据点是否存在
+        if (StrongholdManager.getInstance().getStronghold(areaId) == null) {
+            sender.sendMessage("§c错误: §r据点 " + areaId + " 不存在。");
+            return;
+        }
+
+        StrongholdManager.getInstance().removeStronghold(areaId);
+        sender.sendMessage("§a成功! §r据点 " + areaId + " 已被删除。");
+    }
+}

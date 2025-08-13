@@ -3,3 +3,13 @@ version: 1.0.0-SNAPSHOT
 name: SiDFPlugins
 author: Yun_Hydrogen
 api-version: 1.20
+
+commands:
+  sidf:
+    description: 管理攻防据点 (设置/删除/列表)
+    usage: |
+      §c用法:
+      §7/sidf set area <A/B/C/D> <半径>
+      §7/sidf remove <A/B/C/D>
+      §7/sidf list
+    aliases: [sidfplugins]
