@@ -7,9 +7,13 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.World;
+import org.bukkit.entity.ArmorStand;
 
-import com.sidfplugins.managers.StrongholdManager; // 导入 Stronghold 模型
-import com.sidfplugins.models.Stronghold; // 导入 Map
+import com.sidfplugins.managers.StrongholdManager;
+import com.sidfplugins.models.Stronghold;
+import com.sidfplugins.SiDFPlugins;
 
 public class SidfCommand implements CommandExecutor {
 
@@ -48,6 +52,27 @@ public class SidfCommand implements CommandExecutor {
             return;
         }
 
+        // 检查发送者是否为玩家
+        if (!(sender instanceof Player)) {
+            // 对于控制台发送者，只显示文本列表
+            sender.sendMessage("§a===== §l所有据点列表 §a=====");
+            for (Stronghold stronghold : strongholds.values()) {
+                Location center = stronghold.getCenter();
+                String worldName = center.getWorld() != null ? center.getWorld().getName() : "未知世界";
+                String message = String.format("§e据点 %s: §7世界: %s, 中心: (%.1f, %.1f, %.1f), 半径: %.1f",
+                    stronghold.getId(),
+                    worldName,
+                    center.getX(),
+                    center.getY(),
+                    center.getZ(),
+                    stronghold.getRadius());
+                sender.sendMessage(message);
+            }
+            sender.sendMessage("§a=========================");
+            return;
+        }
+
+        Player player = (Player) sender;
         sender.sendMessage("§a===== §l所有据点列表 §a=====");
         for (Stronghold stronghold : strongholds.values()) {
             Location center = stronghold.getCenter();
@@ -62,11 +87,75 @@ public class SidfCommand implements CommandExecutor {
             sender.sendMessage(message);
         }
         sender.sendMessage("§a=========================");
+
+        // 显示悬浮文字和粒子效果
+        displayHologramsAndParticles(player, strongholds);
+    }
+
+    private void displayHologramsAndParticles(Player player, Map<String, Stronghold> strongholds) {
+        World world = player.getWorld();
+        
+        // 为每个据点创建悬浮文字和粒子效果
+        for (Stronghold stronghold : strongholds.values()) {
+            Location center = stronghold.getCenter();
+            if (center.getWorld() == null) continue;
+            
+            // 在据点中心创建悬浮文字
+            Location hologramLocation = center.clone().add(0, 1.5, 0); // 稍微抬高一点
+            showHologram(hologramLocation, stronghold.getId(), world);
+            
+            // 显示边缘粒子效果
+            showParticlesAroundStronghold(center, stronghold.getRadius(), world);
+        }
+    }
+
+    private void showHologram(Location location, String text, World world) {
+        ArmorStand hologram = world.spawn(location, ArmorStand.class);
+        hologram.setGravity(false);
+        hologram.setInvisible(true);
+        hologram.setCustomName("§e§l" + text);
+        hologram.setCustomNameVisible(true);
+        hologram.setInvulnerable(true);
+        hologram.setVisible(false);
+        hologram.setSilent(true);
+        hologram.setMarker(true);
+        
+        // 10秒后移除悬浮文字
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                hologram.remove();
+            }
+        }.runTaskLater(SiDFPlugins.getInstance(), 200L); // 200 ticks = 10 seconds
+    }
+
+    private void showParticlesAroundStronghold(Location center, double radius, World world) {
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (ticks >= 200) { // 200 ticks = 10 seconds
+                    this.cancel();
+                    return;
+                }
+                
+                // 在圆周上显示粒子效果
+                for (int i = 0; i < 360; i += 15) { // 每15度显示一个粒子
+                    double angle = Math.toRadians(i);
+                    double x = center.getX() + radius * Math.cos(angle);
+                    double z = center.getZ() + radius * Math.sin(angle);
+                    Location particleLocation = new Location(world, x, center.getY() + 0.5, z);
+                    
+                    // 使用发光粒子效果
+                    world.spawnParticle(org.bukkit.Particle.GLOW, particleLocation, 1, 0, 0, 0, 0);
+                }
+                
+                ticks += 5; // 每5个tick运行一次
+            }
+        }.runTaskTimer(SiDFPlugins.getInstance(), 0L, 5L);
     }
 
     private void handleSetCommand(CommandSender sender, String[] args) {
-// ...existing code...
-// ... (handleSetCommand 方法保持不变)
         if (!(sender instanceof Player)) {
             if (sender != null) {
                 sender.sendMessage("§c错误: §r此命令只能由玩家执行。");
@@ -110,8 +199,6 @@ public class SidfCommand implements CommandExecutor {
     }
 
     private void handleRemoveCommand(CommandSender sender, String[] args) {
-// ...existing code...
-// ... (handleRemoveCommand 方法保持不变)
         // /sidf remove <ID> -> 2个参数
         if (args.length != 2) {
             sender.sendMessage("§c用法: §r/sidf remove <A/B/C/D>");

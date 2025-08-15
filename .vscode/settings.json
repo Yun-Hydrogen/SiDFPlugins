@@ -1,4 +1,5 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "Codegeex.RepoIndex": true
+    "Codegeex.RepoIndex": true,
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

@@ -12,8 +12,15 @@ import com.sidfplugins.managers.StrongholdManager;
 
 public class SiDFPlugins extends JavaPlugin {
     
+    private static SiDFPlugins instance;
+    
+    public static SiDFPlugins getInstance() {
+        return instance;
+    }
+    
     @Override
     public void onEnable() {
+        instance = this;
         
         // 设置据点数据文件路径
         File dataFolder = getDataFolder();
