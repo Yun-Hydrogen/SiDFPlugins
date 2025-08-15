@@ -23,11 +23,11 @@ jobs:
     - name: Extract Maven project info
       id: maven-info
       run: |
-        # 提取artifactId（项目名称）
-        ARTIFACT_ID=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='artifactId']/text()" pom.xml)
-        # 提取version（版本号）
-        VERSION=$(xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml)
-        # 输出为GitHub Actions环境变量
+        # 使用 Maven 命令提取 artifactId
+        ARTIFACT_ID=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)
+        # 使用 Maven 命令提取 version
+        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        # 输出为 GitHub Actions 环境变量
         echo "ARTIFACT_ID=$ARTIFACT_ID" >> $GITHUB_OUTPUT
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
     
